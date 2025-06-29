@@ -1,0 +1,4 @@
+[submodule "lib/signals"]
+	path = lib/signals
+	url = https://github.com/Elnhomantia/signals
+	branch = release

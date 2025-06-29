@@ -1,5 +1,8 @@
 #include <Win32_window.h>
 #include <iostream>
+#include <hidsdi.h>
+#include <hidusage.h>
+#include <vulkan/vulkan_win32.h>
 
 Win32_window::Win32_window(const char* title,  const unsigned int width, const unsigned int height)
     : Win32_window(title, "Win32_window", width, height) {}
@@ -88,6 +91,8 @@ void Win32_window::setWindowFlag(WindowFlag flag)
 void Win32_window::update()
 {
     MSG msg = {};
+    //PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)
+    //GetMessage(&msg, nullptr, 0, 0) > 0
     while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
     {
         if(msg.message == WM_QUIT)
@@ -101,7 +106,21 @@ void Win32_window::update()
             DispatchMessage(&msg);
         }
     }
+    WaitMessage();
+}
+
+void Win32_window::render()
+{
+    InvalidateRect(hwnd, nullptr, FALSE);
     UpdateWindow(hwnd);
+}
+
+void Win32_window::exec()
+{
+    while(_isRunning)
+    {
+        update();
+    }
 }
 
 void Win32_window::close()
@@ -123,6 +142,121 @@ uint32_t *Win32_window::getPixelBuffer()
 void Win32_window::setDimentions(const WindowDimentions &dimentions)
 {
     this->dimentions = dimentions;
+    RECT rect = {
+        0, 0,
+        static_cast<LONG>(dimentions.sizeX),
+        static_cast<LONG>(dimentions.sizeY)
+    };
+
+    DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    DWORD exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+
+    AdjustWindowRectEx(&rect, style, FALSE, exStyle);
+
+    int totalWidth = rect.right - rect.left;
+    int totalHeight = rect.bottom - rect.top;
+
+    SetWindowPos(hwnd, nullptr,
+                 0, 0, totalWidth, totalHeight,
+                 SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+const WindowDimentions &Win32_window::getDimentions() const
+{
+    return dimentions;
+}
+
+void Win32_window::setFullscreen()
+{
+    this->setBorderless(true);
+
+    MONITORINFO mi = { sizeof(mi) };
+    GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+    SetWindowPos(hwnd, HWND_TOP,
+                mi.rcMonitor.left, mi.rcMonitor.top,
+                mi.rcMonitor.right - mi.rcMonitor.left,
+                mi.rcMonitor.bottom - mi.rcMonitor.top,
+                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+    this->setDimentions(WindowDimentions{
+        0, 0,
+        static_cast<unsigned int>(mi.rcMonitor.right - mi.rcMonitor.left),
+        static_cast<unsigned int>(mi.rcMonitor.bottom - mi.rcMonitor.top),
+        static_cast<unsigned int>(mi.rcMonitor.right - mi.rcMonitor.left),
+        static_cast<unsigned int>(mi.rcMonitor.bottom - mi.rcMonitor.top)
+    });
+}
+
+void Win32_window::setBorderless(const bool borderless)
+{
+    LONG style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    if(borderless)
+        style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU);
+    else
+        style |= WS_CAPTION | WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU;
+
+    SetWindowLongPtr(hwnd, GWL_STYLE, style);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+void Win32_window::setResizable(const bool resizable)
+{
+    long style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    if(resizable)
+        style |= WS_THICKFRAME | WS_MAXIMIZEBOX;
+    else
+        style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+    SetWindowLong(hwnd, GWL_STYLE, style);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+void Win32_window::showCursor(bool show)
+{
+    _showCursor = show;
+    ShowCursor(show);
+}
+
+void Win32_window::clipCursor(bool clip)
+{
+    _clipCursor = clip;
+    if(clip)
+    {
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+
+        POINT ul = { rect.left, rect.top };
+        POINT lr = { rect.right, rect.bottom };
+        ClientToScreen(hwnd, &ul);
+        ClientToScreen(hwnd, &lr);
+
+        RECT clipRect = { ul.x, ul.y, lr.x, lr.y };
+        ClipCursor(&clipRect);
+    }
+    else
+    {
+        ClipCursor(NULL);
+    }
+}
+
+VkSurfaceKHR Win32_window::createVulkanSurface(VkInstance instance) const
+{
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+
+    VkWin32SurfaceCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    createInfo.hwnd = hwnd;
+    createInfo.hinstance = GetModuleHandle(nullptr);
+
+    VkResult result = vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface);
+    if(result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create Win32 Vulkan surface.");
+    }
+
+    return surface;
 }
 
 LRESULT Win32_window::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -179,6 +313,8 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
         bitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&pixelBuffer, nullptr, 0);
         SelectObject(memDC, bitmap);
 
+        clipCursor(_clipCursor);
+
         InvalidateRect(hwnd, nullptr, TRUE);
 
         return 0;
@@ -191,6 +327,7 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
         mmi->ptMinTrackSize.y = this->dimentions.minY;
         mmi->ptMaxTrackSize.x = this->dimentions.maxX;
         mmi->ptMaxTrackSize.y = this->dimentions.maxY;
+        return 0;
     }
 
     case WM_PAINT:
@@ -202,7 +339,151 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
+    case WM_INPUT:
+    {
+        if(handleInput(msg, wParam, lParam))
+        {
+            return 0;
+        }
+        break;
+    }
+
+    case WM_KILLFOCUS:
+    case WM_ACTIVATE:
+        if (wParam == WA_INACTIVE) {
+            ClipCursor(NULL);
+            ShowCursor(TRUE);
+        }
+        break;
+
+    case WM_SETFOCUS:
+        showCursor(_showCursor);
+        clipCursor(_clipCursor);
+
     default:
-        return DefWindowProc(hwnd, msg, wParam, lParam);
+        break;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+bool Win32_window::handleInput(UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if(msg != WM_INPUT)
+    {
+        return false;
+    }
+
+    UINT dwSize = 0;
+    GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT,
+                    nullptr, &dwSize, sizeof(RAWINPUTHEADER));
+
+    std::vector<BYTE> buffer(dwSize);
+    if(GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT,
+                        buffer.data(), &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+    {
+        return false;
+    }
+
+    RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(buffer.data());
+
+    switch (raw->header.dwType) {
+    case RIM_TYPEKEYBOARD:
+        return handleKeybord(raw);
+    case RIM_TYPEMOUSE:
+        return handleMouse(raw);
+
+    default:
+        return false;
     }
 }
+
+bool Win32_window::handleKeybord(RAWINPUT* raw)
+{
+    const RAWKEYBOARD& rk = raw->data.keyboard;
+    InputEvent::KeyState state;
+
+    switch (rk.Message) {
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        state = InputEvent::KeyState::KEY_DOWN;
+        break;
+
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        state = InputEvent::KeyState::KEY_UP;
+        break;
+
+    default:
+        return false;
+    }
+
+    KeyEvent event(
+        static_cast<InputEvent::DeviceTypeId>(reinterpret_cast<uintptr_t>(raw->header.hDevice)),
+        rk.VKey,
+        state
+    );
+
+    inputEvent.emit(&event);
+    return true;
+}
+
+bool Win32_window::handleMouse(RAWINPUT* raw)
+{
+    const RAWMOUSE& rm = raw->data.mouse;
+    const InputEvent::DeviceTypeId deviceId =
+        static_cast<InputEvent::DeviceTypeId>(reinterpret_cast<uintptr_t>(raw->header.hDevice));
+
+    int absX = 0, absY = 0;
+    int relX = 0, relY = 0;
+    int scrollDelta = 0;
+
+    relX = rm.lLastX;
+    relY = rm.lLastY;
+
+    POINT p;
+    if (GetCursorPos(&p)) {
+        absX = p.x;
+        absY = p.y;
+    }
+
+
+    if (rm.usButtonFlags & RI_MOUSE_WHEEL)
+    {
+
+        scrollDelta = static_cast<SHORT>(rm.usButtonData);
+    }
+
+    auto getKeyState = [&](USHORT downFlag, USHORT upFlag) -> InputEvent::KeyState {
+        if (rm.usButtonFlags & downFlag)
+            return InputEvent::KeyState::KEY_DOWN;
+        else if (rm.usButtonFlags & upFlag)
+            return InputEvent::KeyState::KEY_UP;
+        else
+            return InputEvent::KeyState::KEY_NONE;
+    };
+
+    const InputEvent::KeyState leftState = getKeyState(RI_MOUSE_LEFT_BUTTON_DOWN, RI_MOUSE_LEFT_BUTTON_UP);
+    const InputEvent::KeyState rightState = getKeyState(RI_MOUSE_RIGHT_BUTTON_DOWN, RI_MOUSE_RIGHT_BUTTON_UP);
+    const InputEvent::KeyState middleState = getKeyState(RI_MOUSE_MIDDLE_BUTTON_DOWN, RI_MOUSE_MIDDLE_BUTTON_UP);
+    const InputEvent::KeyState x1State = getKeyState(RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP);
+    const InputEvent::KeyState x2State = getKeyState(RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP);
+
+    MouseEvent event(deviceId, absX, absY, relX, relY, scrollDelta,
+               leftState, rightState, middleState, x1State, x2State);
+    inputEvent.emit(&event);
+
+    return true;
+}
+
+
+bool Win32_window::registerInputDevice(USHORT usUsagePage, USHORT usUsage)
+{
+    RAWINPUTDEVICE rid;
+    rid.usUsagePage = usUsagePage;
+    rid.usUsage = usUsage;
+    rid.dwFlags = RIDEV_INPUTSINK;
+    rid.hwndTarget = hwnd;
+
+    return RegisterRawInputDevices(&rid, 1, sizeof(rid));
+}
+
