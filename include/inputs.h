@@ -1,6 +1,8 @@
 #ifndef INPUTS_H
 #define INPUTS_H
-#include<signals/signal.h>
+
+#include <signal.h>
+#include <queuedthread.h>
 
 struct InputEvent
 {
@@ -75,6 +77,7 @@ public:
 
 protected:
     Signal<InputEvent*> inputEvent;
+    QueuedThread inputEventThread;
 };
 
 #endif

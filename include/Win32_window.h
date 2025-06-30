@@ -5,7 +5,6 @@
 #include <windowUtils.h>
 #include <cstdint>
 #include <windows.h>
-#include <signals/signal.h>
 #include <vulkan/vulkan.h>
 
 class Win32_window : virtual public inputEventAbstraction

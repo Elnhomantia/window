@@ -423,7 +423,10 @@ bool Win32_window::handleKeybord(RAWINPUT* raw)
         state
     );
 
-    inputEvent.emit(&event);
+    inputEventThread.schedule([this, event = std::move(event)]() mutable{
+        inputEvent.emit(&event);
+    });
+
     return true;
 }
 
@@ -442,6 +445,7 @@ bool Win32_window::handleMouse(RAWINPUT* raw)
 
     POINT p;
     if (GetCursorPos(&p)) {
+        ScreenToClient(hwnd, &p);
         absX = p.x;
         absY = p.y;
     }
@@ -470,7 +474,10 @@ bool Win32_window::handleMouse(RAWINPUT* raw)
 
     MouseEvent event(deviceId, absX, absY, relX, relY, scrollDelta,
                leftState, rightState, middleState, x1State, x2State);
-    inputEvent.emit(&event);
+
+    inputEventThread.schedule([this, event = std::move(event)]() mutable{
+        inputEvent.emit(&event);
+    });
 
     return true;
 }

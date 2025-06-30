@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <windowUtils.h>
-#include <signals/signal.h>
 #include <inputs.h>
 #include <vulkan/vulkan.h>
 
