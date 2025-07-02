@@ -10,20 +10,7 @@ using namespace std;
 int main()
 {
     cout << "Hello World!" << endl;
-    AutoWindow window("TEST", 500, 500);
-    //Window* window2 = WindowFactory::getInstance("TEST2", 1920, 1080);
-    window.setDimentions(WindowDimentions{100, 100, 1920, 1080, 2000, 2000});
-    window.setWindowFlag(SHOW_NORMAL);
-    //window2->setWindowFlag(SHOW_NORMAL);
-
-    //window.clipCursor(true);
-
-    cout << "window 1 : " << sizeof(window) << endl;
-    //cout << "window 2 : " << sizeof(*(static_cast<Win32_window_polymorph*>(window2))) << endl;
-
-    window.registerKeyboard();
-    window.registerMouse();
-    Connection c = window.connect_inputEvent([](InputEvent* event){
+    auto logInputs = [](InputEvent* event){
         if(event->type == InputEvent::InputType::KEY_TYPE)
         {
             KeyEvent * ke = static_cast<KeyEvent*>(event);
@@ -46,11 +33,43 @@ int main()
             std::cout << "Scroll delta : "<< me->scrollDelta <<"\n";
             std::cout << "device Id : "<< me->deviceId <<std::endl;
         }
+    };
+
+    std::thread t1 ([&logInputs](){
+        AutoWindow window("Window 1", 500, 500);
+        window.setDimentions(WindowDimentions{100, 100, 500, 500, 2000, 2000});
+        window.setWindowFlag(SHOW_NORMAL);
+        cout << "window 1 : " << sizeof(window) << endl;
+        //window.registerKeyboard();
+        //window.registerMouse();
+        //Connection c = window.connect_inputEvent(logInputs);
+        //window.exec();
     });
 
-    window.exec();
-    //window2->exec();
+    std::thread t2 ([&logInputs](){
+        AutoWindow* window = new AutoWindow("Window 2", 500, 500);
+        window->setWindowFlag(SHOW_NORMAL);
+        cout << "window 2 : " << sizeof(window) << endl;
+        //window.registerKeyboard();
+        //window.registerMouse();
+        //Connection c = window.connect_inputEvent(logInputs);
+        //window->exec();
+    });
 
-    //delete window2;
-    return 0;
+    std::thread t3 ([&logInputs](){
+        Window* window = WindowFactory::getInstance("Window 3", 500, 500);
+        window->setWindowFlag(SHOW_NORMAL);
+        cout << "window 3 : " << sizeof(*(static_cast<Win32_window_polymorph*>(window))) << endl;
+        //window->registerKeyboard();
+        //window->registerMouse();
+        //Connection c = window->connect_inputEvent(logInputs);
+        //window->exec();
+        delete window;
+    });
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    return EXIT_SUCCESS;
 }

@@ -13,17 +13,20 @@ Win32_window::Win32_window(const char* title, const char* className, const unsig
     this->dimentions = {0, 0, width, height, width, height};
     WNDCLASS wc = {};
 
-    wc.lpfnWndProc   = WindowProc;
-    wc.hInstance     = GetModuleHandle(nullptr);
-    wc.lpszClassName = className;
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    static std::once_flag registerClassFlag;
+    std::call_once(registerClassFlag, [&]() {
+        wc.lpfnWndProc   = WindowProc;
+        wc.hInstance     = GetModuleHandle(nullptr);
+        wc.lpszClassName = className;
+        wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
-    if(!RegisterClass(&wc))
-    {
-        DWORD err = GetLastError();
-        std::cout << "RegisterClass failed : " << err <<std::endl;
-        exit(EXIT_FAILURE);
-    }
+        if(!RegisterClass(&wc))
+        {
+            DWORD err = GetLastError();
+            std::cout << "RegisterClass failed : " << err <<std::endl;
+            exit(EXIT_FAILURE);
+        }
+    });
 
     RECT rect = {0, 0, (LONG)width, (LONG)height};
     AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
@@ -43,29 +46,16 @@ Win32_window::Win32_window(const char* title, const char* className, const unsig
     }
 
     hdc = GetDC(hwnd);
-    memDC = CreateCompatibleDC(hdc);
-
-    BITMAPINFO bmi = {};
-
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = static_cast<LONG>(width);
-    bmi.bmiHeader.biHeight = -static_cast<LONG>(height);
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
-    bitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&pixelBuffer, nullptr, 0);
-    SelectObject(memDC, bitmap);
 
     _isRunning = true;
 }
 
 Win32_window::~Win32_window()
 {
-    DeleteObject(bitmap);
-    DeleteDC(memDC);
-    ReleaseDC(hwnd, hdc);
-    DestroyWindow(hwnd);
+    if(_isRunning)
+    {
+        this->close();
+    }
 }
 
 void Win32_window::setWindowFlag(WindowFlag flag)
@@ -91,8 +81,6 @@ void Win32_window::setWindowFlag(WindowFlag flag)
 void Win32_window::update()
 {
     MSG msg = {};
-    //PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)
-    //GetMessage(&msg, nullptr, 0, 0) > 0
     while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
     {
         if(msg.message == WM_QUIT)
@@ -106,7 +94,10 @@ void Win32_window::update()
             DispatchMessage(&msg);
         }
     }
-    WaitMessage();
+    if(_isRunning)
+    {
+        WaitMessage();
+    }
 }
 
 void Win32_window::render()
@@ -121,22 +112,17 @@ void Win32_window::exec()
     {
         update();
     }
+    std::cout << "END" << std::endl;
 }
 
 void Win32_window::close()
 {
-    _isRunning = false;
-    PostQuitMessage(0);
+    SendMessage(hwnd, WM_CLOSE, 0, 0);
 }
 
 bool Win32_window::isRunning() const
 {
     return _isRunning;
-}
-
-uint32_t *Win32_window::getPixelBuffer()
-{
-    return pixelBuffer;
 }
 
 void Win32_window::setDimentions(const WindowDimentions &dimentions)
@@ -288,7 +274,13 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
     {
+    case WM_CLOSE:
+        _isRunning = false;
+        closeEvent.emit();
+        DestroyWindow(hwnd);
+        return 0;
     case WM_DESTROY:
+        ReleaseDC(hwnd, hdc);
         PostQuitMessage(0);
         return 0;
 
@@ -296,22 +288,7 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     {
         this->dimentions.sizeX = LOWORD(lParam);
         this->dimentions.sizeY = HIWORD(lParam);
-        if(nullptr != bitmap)
-        {
-            DeleteObject(bitmap);
-        }
-
-        BITMAPINFO bmi = {};
-
-        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = static_cast<LONG>(this->dimentions.sizeX);
-        bmi.bmiHeader.biHeight = -static_cast<LONG>(this->dimentions.sizeY);
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB;
-
-        bitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, (void**)&pixelBuffer, nullptr, 0);
-        SelectObject(memDC, bitmap);
+        resizeEvent.emit(this->dimentions.sizeX, this->dimentions.sizeY);
 
         clipCursor(_clipCursor);
 
@@ -333,8 +310,7 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
-        HDC hdcPaint = BeginPaint(hwnd, &ps);
-        BitBlt(hdcPaint, 0, 0, this->dimentions.sizeX, this->dimentions.sizeY, memDC, 0, 0, SRCCOPY);
+        BeginPaint(hwnd, &ps);
         EndPaint(hwnd, &ps);
         return 0;
     }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Window LANGUAGES CXX)
+project(Window VERSION 1.0.0 LANGUAGES CXX)
 
 include(FetchContent)
 set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/lib)
@@ -21,7 +21,7 @@ set(SOURCES_FILES
     src/Win32_window.cpp
 )
 
-add_executable(Window main.cpp ${INCLUDES_FILES} ${SOURCES_FILES})
+add_library(Window STATIC ${INCLUDES_FILES} ${SOURCES_FILES})
 target_include_directories(Window PRIVATE include)
 
 FetchContent_Declare(
@@ -43,8 +43,53 @@ target_link_libraries(Window PRIVATE QueuedThread)
 find_package(Vulkan REQUIRED)
 target_link_libraries(Window PRIVATE Vulkan::Vulkan)
 
-include(GNUInstallDirs)
+install(DIRECTORY include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h")
+
 install(TARGETS Window
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    EXPORT WindowTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(EXPORT WindowTargets
+    FILE WindowTargets.cmake
+    NAMESPACE Elth::
+    DESTINATION lib/cmake/Window
+)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/WindowConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake"
+    INSTALL_DESTINATION lib/cmake/Window
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ConfigVersion.cmake"
+    DESTINATION lib/cmake/Window
+)
+
+# ============ Tests ============
+
+enable_testing()
+add_subdirectory(tests)
+
+#For whatever reason I need to compile multiple time for the compiler to do this goal ???
+#Even, after a clean it might fail, if I compile multiple times it works ?????
+add_custom_target(check ALL
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    DEPENDS Window
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

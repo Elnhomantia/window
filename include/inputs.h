@@ -70,14 +70,36 @@ struct GamepadEvent : InputEvent
     {}
 };
 
-class inputEventAbstraction
+class EventAbstraction
 {
 public:
     SIGNAL_CONNECT_FORWARD(inputEvent, InputEvent*)
+    SIGNAL_CONNECT_FORWARD(resizeEvent, int, int)
+    SIGNAL_CONNECT_FORWARD(closeEvent)
 
 protected:
+    /**
+     * @brief This event is emited when when an input is registered.
+     * (Asynchronous event).
+     */
     Signal<InputEvent*> inputEvent;
+    /**
+     * @brief inputEventThread
+     *
+     */
     QueuedThread inputEventThread;
+
+    /**
+     * @brief This event is emited when the window is resized.
+     * (Synchronous event).
+     */
+    Signal<int, int> resizeEvent;
+
+    /**
+     * @brief This event is emited when the window is closed.
+     * (Synchronous event).
+     */
+    Signal<> closeEvent;
 };
 
 #endif

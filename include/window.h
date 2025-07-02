@@ -1,7 +1,6 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <cstdint>
 #include <windowUtils.h>
 #include <inputs.h>
 #include <vulkan/vulkan.h>
@@ -19,7 +18,6 @@ concept WindowConcept = requires(T WindowManager,
     {WindowManager.exec()}              -> std::same_as<void>;
     {WindowManager.close()}             -> std::same_as<void>;
     {WindowManager.isRunning()}         -> std::convertible_to<bool>;
-    {WindowManager.getPixelBuffer()}    -> std::convertible_to<uint32_t*>;
     {WindowManager.setDimentions(dim)}  -> std::same_as<void>;
     {WindowManager.getDimentions()}     -> std::convertible_to<const WindowDimentions&>;
 
@@ -36,7 +34,7 @@ concept WindowConcept = requires(T WindowManager,
     {WindowManagerConst.createVulkanSurface(instance)} -> std::convertible_to<VkSurfaceKHR>;
 };
 
-class Window : virtual public inputEventAbstraction
+class Window : virtual public EventAbstraction
 {
 public:
 
@@ -48,7 +46,6 @@ public:
     virtual void exec() = 0;
     virtual void close() = 0;
     virtual bool isRunning() const = 0;
-    virtual uint32_t* getPixelBuffer() = 0;
     virtual void setDimentions(const WindowDimentions & dimentions) = 0;
     virtual const WindowDimentions& getDimentions() const = 0;
 

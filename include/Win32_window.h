@@ -7,7 +7,7 @@
 #include <windows.h>
 #include <vulkan/vulkan.h>
 
-class Win32_window : virtual public inputEventAbstraction
+class Win32_window : virtual public EventAbstraction
 {
 
 public:
@@ -21,7 +21,6 @@ public:
     void exec();
     void close();
     bool isRunning() const;
-    uint32_t* getPixelBuffer();
     void setDimentions(const WindowDimentions& dimentions);
     const WindowDimentions& getDimentions() const;
 
@@ -53,10 +52,7 @@ protected:
 private:
     HWND hwnd = nullptr;
     HDC hdc = nullptr;
-    HDC memDC = nullptr;
-    HBITMAP bitmap = nullptr;
 
-    uint32_t* pixelBuffer;
     bool _isRunning;
 
     bool _showCursor = true;
