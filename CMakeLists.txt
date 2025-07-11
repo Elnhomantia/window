@@ -2,46 +2,38 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Window VERSION 1.0.0 LANGUAGES CXX)
 
-include(FetchContent)
-set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/lib)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(INCLUDES_FILES
-    include/Win32_window.h
-    include/Win32_window_polymorph.h
     include/window.h
     include/autoWindow.h
     include/windowUtils.h
     include/inputs.h
 )
 
-set(SOURCES_FILES
-    src/Win32_window.cpp
-)
+set(SOURCES_FILES)
+
+if(WIN32)
+    list(APPEND INCLUDES_FILES
+        include/Win32_window.h
+        include/Win32_window_polymorph.h
+    )
+    list(APPEND SOURCES_FILES
+        src/Win32_window.cpp
+    )
+elseif(UNIX)
+
+endif()
 
 add_library(Window STATIC ${INCLUDES_FILES} ${SOURCES_FILES})
-target_include_directories(Window PRIVATE include)
-
-FetchContent_Declare(
-    signals
-    GIT_REPOSITORY https://github.com/Elnhomantia/signals
-    GIT_TAG v1.1.2
-)
-FetchContent_MakeAvailable(signals)
-target_link_libraries(Window PRIVATE signals)
-
-FetchContent_Declare(
-    QueuedThread
-    GIT_REPOSITORY https://github.com/Elnhomantia/QueuedThread
-    GIT_BRANCH master
-)
-FetchContent_MakeAvailable(QueuedThread)
-target_link_libraries(Window PRIVATE QueuedThread)
+target_include_directories(Window PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 find_package(Vulkan REQUIRED)
-target_link_libraries(Window PRIVATE Vulkan::Vulkan)
+find_package(signals REQUIRED CONFIG)
+find_package(QueuedThread REQUIRED CONFIG)
+
+target_link_libraries(Window PRIVATE Elth::signals Elth::QueuedThread Vulkan::Vulkan)
 
 install(DIRECTORY include/
         DESTINATION include
@@ -86,10 +78,8 @@ install(FILES
 enable_testing()
 add_subdirectory(tests)
 
-#For whatever reason I need to compile multiple time for the compiler to do this goal ???
-#Even, after a clean it might fail, if I compile multiple times it works ?????
 add_custom_target(check ALL
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS Window
+    DEPENDS Window tests_all
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
