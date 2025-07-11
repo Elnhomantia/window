@@ -1,7 +1,6 @@
 #ifndef AUTOWINDOW_H
 #define AUTOWINDOW_H
 
-#include <Win32_window_polymorph.h>
 #include <window.h>
 
 template<WindowConcept T>
@@ -9,6 +8,7 @@ using CheckedWindow = T;
 
 #if defined(_WIN32)
     #include <Win32_window.h>
+    #include <Win32_window_polymorph.h>
     using AutoWindow = CheckedWindow<Win32_window>;
 #elif defined(__linux__)
     #error "Unsupported platform for now"
