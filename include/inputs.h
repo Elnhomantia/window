@@ -1,8 +1,8 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-#include <signal.h>
-#include <queuedthread.h>
+#include <Elth/signals/signals.h>
+#include <Elth/queuedthread/queuedthread.h>
 
 struct InputEvent
 {

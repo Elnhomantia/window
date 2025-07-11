@@ -1,0 +1,15 @@
+{
+    "default-registry": {
+    "kind": "git",
+    "repository": "https://github.com/microsoft/vcpkg",
+    "baseline": "efcfaaf60d7ec57a159fc3110403d939bfb69729"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/Elnhomantia/Elnho_vcpkg",
+      "baseline": "ce4c2a8927a7d2e8950f93f890c21f3680e1e2a7",
+      "packages": [ "signals", "queuedthread" ]
+    }
+  ]
+}

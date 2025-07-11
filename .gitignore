@@ -1,3 +1,5 @@
 build
 lib
 CMakeLists.txt.user
+vcpkg_installed
+.vscode
