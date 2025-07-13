@@ -66,7 +66,7 @@ public:
      */
     virtual void render() = 0;
     /**
-     * @brief basic event loop for a window. 
+     * @brief Basic event loop for a window. 
      * This will lock its thread whil the window is running.
      * Don't call in your main thread. The window should be created where you call @ref exec.
      */
@@ -149,7 +149,7 @@ public:
      * @brief Create a Vulkan Surface object.
      * 
      * @param instance A vulkan instance.
-     * @return VkSurfaceKHR A vulkan surface.
+     * @return A vulkan surface.
      */
     virtual VkSurfaceKHR createVulkanSurface(VkInstance instance) const = 0;
 };

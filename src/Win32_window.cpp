@@ -64,16 +64,16 @@ void Win32_window::setWindowFlag(WindowFlag flag)
 
     switch (flag)
     {
-    case HIDE:              winFlag = SW_HIDE; break;
-    case SHOW:              winFlag = SW_SHOW; break;
-    case SHOW_NORMAL:       winFlag = SW_SHOWNORMAL; break;
-    case SHOW_MINIMIZED:    winFlag = SW_SHOWMINIMIZED; break;
-    case SHOW_MAXIMIZED:    winFlag = SW_SHOWMAXIMIZED; break;
-    case MAXIMIZE:          winFlag = SW_MAXIMIZE; break;
-    case SHOW_NOACTIVATE:   winFlag = SW_SHOWNOACTIVATE; break;
-    case SHOW_NA:           winFlag = SW_SHOWNA; break;
-    case RESTORE:           winFlag = SW_RESTORE; break;
-    case SHOW_DEFAULT:      winFlag = SW_SHOWDEFAULT; break;
+    case WindowFlag::HIDE:              winFlag = SW_HIDE; break;
+    case WindowFlag::SHOW:              winFlag = SW_SHOW; break;
+    case WindowFlag::SHOW_NORMAL:       winFlag = SW_SHOWNORMAL; break;
+    case WindowFlag::SHOW_MINIMIZED:    winFlag = SW_SHOWMINIMIZED; break;
+    case WindowFlag::SHOW_MAXIMIZED:    winFlag = SW_SHOWMAXIMIZED; break;
+    case WindowFlag::MAXIMIZE:          winFlag = SW_MAXIMIZE; break;
+    case WindowFlag::SHOW_NOACTIVATE:   winFlag = SW_SHOWNOACTIVATE; break;
+    case WindowFlag::SHOW_NA:           winFlag = SW_SHOWNA; break;
+    case WindowFlag::RESTORE:           winFlag = SW_RESTORE; break;
+    case WindowFlag::SHOW_DEFAULT:      winFlag = SW_SHOWDEFAULT; break;
     }
     ShowWindow(hwnd, winFlag);
 }

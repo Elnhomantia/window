@@ -24,8 +24,7 @@ protected:
      */
     Signal<InputEvent*> inputEvent;
     /**
-     * @brief inputEventThread
-     *
+     * @brief Thread used for all input event. Any connected function to @ref inputEvent will be called there.
      */
     QueuedThread inputEventThread;
 

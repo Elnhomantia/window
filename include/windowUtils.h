@@ -1,6 +1,9 @@
 #ifndef WINDOWUTILS_H
 #define WINDOWUTILS_H
 
+/**
+ * @brief Window dimention object. This include min, actual and max dimentions.
+ */
 struct WindowDimentions
 {
     unsigned int minX = 50, minY = 50;
@@ -8,7 +11,10 @@ struct WindowDimentions
     unsigned int maxX = 200, maxY = 200;
 };
 
-enum WindowFlag
+/**
+ * @brief Window display flag.
+ */
+enum class WindowFlag
 {
     HIDE,
     SHOW,
