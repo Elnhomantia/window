@@ -3,11 +3,11 @@
 
 #include <inputs.h>
 #include <windowUtils.h>
-#include <cstdint>
+#include <sharedAbstration.h>
 #include <windows.h>
 #include <vulkan/vulkan.h>
 
-class Win32_window : virtual public EventAbstraction
+class Win32_window : virtual public SharedAbstraction
 {
 
 public:

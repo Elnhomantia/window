@@ -2,7 +2,7 @@
 #define WIN32_WINDOW_POLYMORPH_H
 
 #include <window.h>
-#include <Win32_window.h>
+#include <Win32/Win32_window.h>
 
 #include <windows.h>
 

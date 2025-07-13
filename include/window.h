@@ -3,38 +3,38 @@
 
 #include <windowUtils.h>
 #include <inputs.h>
+#include <sharedAbstration.h>
 #include <vulkan/vulkan.h>
 
 template<typename T>
-concept WindowConcept = requires(T WindowManager,
-                                 const T& WindowManagerConst,
-                                 WindowFlag flag,
-                                 const WindowDimentions& dim,
-                                 bool b,
-                                 VkInstance instance) {
-    {WindowManager.setWindowFlag(flag)} -> std::same_as<void>;
-    {WindowManager.update()}            -> std::same_as<void>;
-    {WindowManager.render()}            -> std::same_as<void>;
-    {WindowManager.exec()}              -> std::same_as<void>;
-    {WindowManager.close()}             -> std::same_as<void>;
-    {WindowManager.isRunning()}         -> std::convertible_to<bool>;
-    {WindowManager.setDimentions(dim)}  -> std::same_as<void>;
-    {WindowManager.getDimentions()}     -> std::convertible_to<const WindowDimentions&>;
+concept WindowConcept = 
+    std::derived_from<T, SharedAbstraction> &&
+    requires(T WindowManager, const T& WindowManagerConst,
+     WindowFlag flag, const WindowDimentions& dim,
+     bool b, VkInstance instance) {
+        {WindowManager.setWindowFlag(flag)} -> std::same_as<void>;
+        {WindowManager.update()}            -> std::same_as<void>;
+        {WindowManager.render()}            -> std::same_as<void>;
+        {WindowManager.exec()}              -> std::same_as<void>;
+        {WindowManager.close()}             -> std::same_as<void>;
+        {WindowManager.isRunning()}         -> std::convertible_to<bool>;
+        {WindowManager.setDimentions(dim)}  -> std::same_as<void>;
+        {WindowManager.getDimentions()}     -> std::convertible_to<const WindowDimentions&>;
 
-    {WindowManager.setFullscreen()}     -> std::same_as<void>;
-    {WindowManager.setBorderless(b)}    -> std::same_as<void>;
-    {WindowManager.setResizable(b)}     -> std::same_as<void>;
+        {WindowManager.setFullscreen()}     -> std::same_as<void>;
+        {WindowManager.setBorderless(b)}    -> std::same_as<void>;
+        {WindowManager.setResizable(b)}     -> std::same_as<void>;
 
-    {WindowManager.registerMouse()}     -> std::convertible_to<bool>;
-    {WindowManager.registerKeyboard()}  -> std::convertible_to<bool>;
+        {WindowManager.registerMouse()}     -> std::convertible_to<bool>;
+        {WindowManager.registerKeyboard()}  -> std::convertible_to<bool>;
 
-    {WindowManager.showCursor(b)} -> std::same_as<void>;
-    {WindowManager.clipCursor(b)} -> std::same_as<void>;
+        {WindowManager.showCursor(b)} -> std::same_as<void>;
+        {WindowManager.clipCursor(b)} -> std::same_as<void>;
 
-    {WindowManagerConst.createVulkanSurface(instance)} -> std::convertible_to<VkSurfaceKHR>;
+        {WindowManagerConst.createVulkanSurface(instance)} -> std::convertible_to<VkSurfaceKHR>;
 };
 
-class Window : virtual public EventAbstraction
+class Window : virtual public SharedAbstraction
 {
 public:
 

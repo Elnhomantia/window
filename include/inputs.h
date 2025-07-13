@@ -1,8 +1,7 @@
 #ifndef INPUTS_H
 #define INPUTS_H
 
-#include <Elth/signals/signals.h>
-#include <Elth/queuedthread/queuedthread.h>
+#include <vector>
 
 struct InputEvent
 {
@@ -58,8 +57,8 @@ struct MouseEvent : InputEvent
 
 struct GamepadEvent : InputEvent
 {
-    std::vector<int> axes;       // valeurs des axes
-    std::vector<bool> buttons;   // état des boutons (true=pressé, false=relâché)
+    std::vector<int> axes;
+    std::vector<bool> buttons;
 
     GamepadEvent(const DeviceTypeId deviceId,
                  std::vector<int> axes,
@@ -70,36 +69,4 @@ struct GamepadEvent : InputEvent
     {}
 };
 
-class EventAbstraction
-{
-public:
-    SIGNAL_CONNECT_FORWARD(inputEvent, InputEvent*)
-    SIGNAL_CONNECT_FORWARD(resizeEvent, int, int)
-    SIGNAL_CONNECT_FORWARD(closeEvent)
-
-protected:
-    /**
-     * @brief This event is emited when when an input is registered.
-     * (Asynchronous event).
-     */
-    Signal<InputEvent*> inputEvent;
-    /**
-     * @brief inputEventThread
-     *
-     */
-    QueuedThread inputEventThread;
-
-    /**
-     * @brief This event is emited when the window is resized.
-     * (Synchronous event).
-     */
-    Signal<int, int> resizeEvent;
-
-    /**
-     * @brief This event is emited when the window is closed.
-     * (Synchronous event).
-     */
-    Signal<> closeEvent;
-};
-
-#endif
+#endif //INPUTS_H

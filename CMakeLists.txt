@@ -16,8 +16,8 @@ set(SOURCES_FILES)
 
 if(WIN32)
     list(APPEND INCLUDES_FILES
-        include/Win32_window.h
-        include/Win32_window_polymorph.h
+        include/Win32/Win32_window.h
+        include/Win32/Win32_window_polymorph.h
     )
     list(APPEND SOURCES_FILES
         src/Win32_window.cpp
