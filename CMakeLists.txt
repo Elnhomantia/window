@@ -22,7 +22,8 @@ if(WIN32)
     list(APPEND SOURCES_FILES
         src/Win32_window.cpp
     )
-elseif(UNIX)
+endif()
+if(UNIX)
 
 endif()
 
