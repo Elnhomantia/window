@@ -6,6 +6,15 @@
 #include <inputs.h>
 
 /**
+ * @brief Resize step. START for before the first resize and FINISH for after the last.
+ */
+enum class ResizeStep
+{
+    START,
+    FINISH
+};
+
+/**
  * @brief Class used to share objects accross implementation for differents OS.
  * It only exist because both static and polymorphic implementations exist.
  * If needed, should probably be virtually inherited to guaranty only one instance exist.
@@ -14,7 +23,7 @@ class SharedAbstraction
 {
 public:
     SIGNAL_CONNECT_FORWARD(inputEvent, InputEvent*)
-    SIGNAL_CONNECT_FORWARD(resizeEvent, int, int)
+    SIGNAL_CONNECT_FORWARD(resizeStatus, ResizeStep)
     SIGNAL_CONNECT_FORWARD(closeEvent)
 
 protected:
@@ -29,10 +38,9 @@ protected:
     QueuedThread inputEventThread;
 
     /**
-     * @brief This event is emited when the window is resized.
-     * (Synchronous event).
+     * @brief This event is emited before the first resize and after the last with @ref ResizeStep parameter.
      */
-    Signal<int, int> resizeEvent;
+    Signal<ResizeStep> resizeStatus;
 
     /**
      * @brief This event is emited when the window is closed.

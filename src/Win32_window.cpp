@@ -4,21 +4,25 @@
 #include <hidusage.h>
 #include <vulkan/vulkan_win32.h>
 
+#define D_SHOW      (WM_APP + 1)
+#define D_HIDE      (WM_APP + 2)
+#define D_MINIMIZE  (WM_APP + 3)
+#define D_MAXIMIZE  (WM_APP + 4)
+#define D_RESTORE   (WM_APP + 5)
+#define D_FOCUS     (WM_APP + 6)
+
 Win32_window::Win32_window(const char* title,  const unsigned int width, const unsigned int height)
-    : Win32_window(title, "Win32_window", width, height) {}
-
-
-Win32_window::Win32_window(const char* title, const char* className, const unsigned int width, const unsigned int height)
 {
     this->dimentions = {0, 0, width, height, width, height};
-    WNDCLASS wc = {};
-
+    
     static std::once_flag registerClassFlag;
     std::call_once(registerClassFlag, [&]() {
+        WNDCLASS wc = {};
         wc.lpfnWndProc   = WindowProc;
         wc.hInstance     = GetModuleHandle(nullptr);
-        wc.lpszClassName = className;
+        wc.lpszClassName = "Win32_window";
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        wc.hbrBackground = nullptr;
 
         if(!RegisterClass(&wc))
         {
@@ -27,6 +31,12 @@ Win32_window::Win32_window(const char* title, const char* className, const unsig
             exit(EXIT_FAILURE);
         }
     });
+
+    WNDCLASS wc;
+    if (!(GetClassInfo(GetModuleHandle(nullptr), "Win32_window", &wc))) {
+        std::cout << "Unregistered class : " << "Win32_window or child class" <<std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     RECT rect = {0, 0, (LONG)width, (LONG)height};
     AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
@@ -58,24 +68,29 @@ Win32_window::~Win32_window()
     }
 }
 
-void Win32_window::setWindowFlag(WindowFlag flag)
+void Win32_window::show()
 {
-    int winFlag;
-
-    switch (flag)
-    {
-    case WindowFlag::HIDE:              winFlag = SW_HIDE; break;
-    case WindowFlag::SHOW:              winFlag = SW_SHOW; break;
-    case WindowFlag::SHOW_NORMAL:       winFlag = SW_SHOWNORMAL; break;
-    case WindowFlag::SHOW_MINIMIZED:    winFlag = SW_SHOWMINIMIZED; break;
-    case WindowFlag::SHOW_MAXIMIZED:    winFlag = SW_SHOWMAXIMIZED; break;
-    case WindowFlag::MAXIMIZE:          winFlag = SW_MAXIMIZE; break;
-    case WindowFlag::SHOW_NOACTIVATE:   winFlag = SW_SHOWNOACTIVATE; break;
-    case WindowFlag::SHOW_NA:           winFlag = SW_SHOWNA; break;
-    case WindowFlag::RESTORE:           winFlag = SW_RESTORE; break;
-    case WindowFlag::SHOW_DEFAULT:      winFlag = SW_SHOWDEFAULT; break;
-    }
-    ShowWindow(hwnd, winFlag);
+    PostMessage(hwnd, D_SHOW, 0, 0);
+}
+void Win32_window::hide()
+{
+    PostMessage(hwnd, D_HIDE, 0, 0);
+}
+void Win32_window::minimize()
+{
+    PostMessage(hwnd, D_MINIMIZE, 0, 0);
+}
+void Win32_window::maximize()
+{
+    PostMessage(hwnd, D_MAXIMIZE, 0, 0);
+}
+void Win32_window::restore()
+{
+    PostMessage(hwnd, D_RESTORE, 0, 0);
+}
+void Win32_window::focus()
+{
+    PostMessage(hwnd, D_FOCUS, 0, 0);
 }
 
 void Win32_window::update()
@@ -112,7 +127,6 @@ void Win32_window::exec()
     {
         update();
     }
-    std::cout << "END" << std::endl;
 }
 
 void Win32_window::close()
@@ -274,6 +288,26 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
     {
+    case D_SHOW:
+        ShowWindow(hwnd, SW_SHOWNORMAL);
+        break;
+    case D_HIDE:
+        ShowWindow(hwnd, SW_HIDE);
+        break;
+    case D_MINIMIZE:
+        ShowWindow(hwnd, SW_MINIMIZE);
+        break;
+    case D_MAXIMIZE:
+        ShowWindow(hwnd, SW_MAXIMIZE);
+        break;
+    case D_RESTORE:
+        ShowWindow(hwnd, SW_RESTORE);
+        break;
+    case D_FOCUS:
+        SetForegroundWindow(hwnd);
+        SetFocus(hwnd);
+        break;
+
     case WM_CLOSE:
         _isRunning = false;
         closeEvent.emit();
@@ -284,16 +318,29 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         return 0;
 
+    case WM_ENTERSIZEMOVE:
+        resizeStatus.emit(ResizeStep::START);
+        break;
+    case WM_EXITSIZEMOVE:
+        resizeStatus.emit(ResizeStep::FINISH);
+        break;
     case WM_SIZE:
     {
-        this->dimentions.sizeX = LOWORD(lParam);
-        this->dimentions.sizeY = HIWORD(lParam);
-        resizeEvent.emit(this->dimentions.sizeX, this->dimentions.sizeY);
+        switch (wParam) {
+            case SIZE_MINIMIZED:
+                showCursor(true);
+                clipCursor(false);
+                break;
 
-        clipCursor(_clipCursor);
-
-        InvalidateRect(hwnd, nullptr, TRUE);
-
+            case SIZE_RESTORED:
+            case SIZE_MAXIMIZED:
+                this->dimentions.sizeX = LOWORD(lParam);
+                this->dimentions.sizeY = HIWORD(lParam);
+                clipCursor(_clipCursor);
+                showCursor(_showCursor);
+                InvalidateRect(hwnd, nullptr, FALSE);
+                break;
+        }
         return 0;
     }
 
@@ -317,10 +364,7 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
 
     case WM_INPUT:
     {
-        if(handleInput(msg, wParam, lParam))
-        {
-            return 0;
-        }
+        handleInput(wParam, lParam);
         break;
     }
 
@@ -342,13 +386,8 @@ LRESULT Win32_window::handleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-bool Win32_window::handleInput(UINT msg, WPARAM wParam, LPARAM lParam)
+bool Win32_window::handleInput(WPARAM wParam, LPARAM lParam)
 {
-    if(msg != WM_INPUT)
-    {
-        return false;
-    }
-
     UINT dwSize = 0;
     GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT,
                     nullptr, &dwSize, sizeof(RAWINPUTHEADER));

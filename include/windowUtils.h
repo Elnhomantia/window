@@ -11,21 +11,4 @@ struct WindowDimentions
     unsigned int maxX = 200, maxY = 200;
 };
 
-/**
- * @brief Window display flag.
- */
-enum class WindowFlag
-{
-    HIDE,
-    SHOW,
-    SHOW_NORMAL,
-    SHOW_MINIMIZED,
-    SHOW_MAXIMIZED,
-    MAXIMIZE,
-    SHOW_NOACTIVATE,
-    SHOW_NA,
-    RESTORE,
-    SHOW_DEFAULT
-};
-
 #endif //WINDOWUTILS_H

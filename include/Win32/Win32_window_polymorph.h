@@ -11,10 +11,16 @@ class Win32_window_polymorph : public Window, private Win32_window
 public:
 
     Win32_window_polymorph(const char* title, const unsigned int width, const unsigned int height)
-        : Win32_window(title, "Win32_window_polymorph", width, height) {}
+        : Win32_window(title, width, height) {}
     ~Win32_window_polymorph() = default;
 
-    inline void setWindowFlag(WindowFlag flag) override { Win32_window::setWindowFlag(flag); }
+    inline void show() override { Win32_window::show(); }
+    inline void hide() override { Win32_window::hide(); }
+    inline void minimize() override { Win32_window::minimize(); }
+    inline void maximize() override { Win32_window::maximize(); }
+    inline void restore() override { Win32_window::restore(); }
+    inline void focus() override { Win32_window::focus(); } 
+    
     inline void update() override { Win32_window::update(); }
     inline void render() override { Win32_window::render(); }
     inline void exec() override { Win32_window::exec(); }

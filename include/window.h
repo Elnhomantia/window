@@ -16,9 +16,15 @@ template<typename T>
 concept WindowConcept = 
     std::derived_from<T, SharedAbstraction> &&
     requires(T WindowManager, const T& WindowManagerConst,
-     WindowFlag flag, const WindowDimentions& dim,
+     const WindowDimentions& dim,
      bool b, VkInstance instance) {
-        {WindowManager.setWindowFlag(flag)} -> std::same_as<void>;
+        {WindowManager.show()}              -> std::same_as<void>;
+        {WindowManager.hide()}              -> std::same_as<void>;
+        {WindowManager.minimize()}          -> std::same_as<void>;
+        {WindowManager.maximize()}          -> std::same_as<void>;
+        {WindowManager.restore()}           -> std::same_as<void>;
+        {WindowManager.focus()}             -> std::same_as<void>;
+
         {WindowManager.update()}            -> std::same_as<void>;
         {WindowManager.render()}            -> std::same_as<void>;
         {WindowManager.exec()}              -> std::same_as<void>;
@@ -52,11 +58,30 @@ public:
     virtual ~Window() = default;
 
     /**
-     * @brief Set the Window visibility flag. 
-     * 
-     * @param flag See @ref WindowFlag.
+     * @brief Show the window.
      */
-    virtual void setWindowFlag(WindowFlag flag) = 0;
+    virtual void show() = 0;
+    /**
+     * @brief Hide the window.
+     */
+    virtual void hide() = 0;
+    /**
+     * @brief Minimize the window into task bar.
+     */
+    virtual void minimize() = 0;
+    /**
+     * @brief Maximize the window.
+     */
+    virtual void maximize() = 0;
+    /**
+     * @brief Restore the window from before minimize or maximize
+     */
+    virtual void restore() = 0;
+    /**
+     * @brief Set focus on window.
+     */
+    virtual void focus() = 0;
+
     /**
      * @brief Event loop handler. This does not update the content of the window.
      */

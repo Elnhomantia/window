@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Window VERSION 1.0.0 LANGUAGES CXX)
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -28,7 +31,10 @@ if(UNIX)
 endif()
 
 add_library(Window STATIC ${INCLUDES_FILES} ${SOURCES_FILES})
-target_include_directories(Window PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(Window PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Elth/window>
+)
 
 find_package(Vulkan REQUIRED)
 find_package(signals REQUIRED CONFIG)
@@ -36,17 +42,9 @@ find_package(QueuedThread REQUIRED CONFIG)
 
 target_link_libraries(Window PRIVATE Elth::signals Elth::QueuedThread Vulkan::Vulkan)
 
-install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Elth/window)
 
-install(TARGETS Window
-    EXPORT WindowTargets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
-)
+install(TARGETS Window EXPORT WindowTargets)
 
 install(EXPORT WindowTargets
     FILE WindowTargets.cmake
@@ -54,24 +52,21 @@ install(EXPORT WindowTargets
     DESTINATION lib/cmake/Window
 )
 
-include(CMakePackageConfigHelpers)
-
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/WindowConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/windowConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake"
-    INSTALL_DESTINATION lib/cmake/Window
+    ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/windowConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/window
 )
-
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/Config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/ConfigVersion.cmake"
-    DESTINATION lib/cmake/Window
+    ${CMAKE_CURRENT_BINARY_DIR}/windowConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/windowConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/window
 )
 
 # ============ Tests ============

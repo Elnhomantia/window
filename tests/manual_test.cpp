@@ -36,32 +36,32 @@ int main()
     std::thread t1 ([&logInputs](){
         AutoWindow window("Window 1", 500, 500);
         window.setDimentions(WindowDimentions{100, 100, 500, 500, 2000, 2000});
-        window.setWindowFlag(SHOW_NORMAL);
+        window.show();
         std::cout << "window 1 : " << sizeof(window) << std::endl;
         //window.registerKeyboard();
         //window.registerMouse();
         //Connection c = window.connect_inputEvent(logInputs);
-        //window.exec();
+        window.exec();
     });
 
     std::thread t2 ([&logInputs](){
         AutoWindow window("Window 2", 500, 500);
-        window.setWindowFlag(SHOW_NORMAL);
+        window.show();
         std::cout << "window 2 : " << sizeof(window) << std::endl;
         //window.registerKeyboard();
         //window.registerMouse();
         //Connection c = window.connect_inputEvent(logInputs);
-        //window.exec();
+        window.exec();
     });
 
     std::thread t3 ([&logInputs](){
         Window* window = WindowFactory::getInstance("Window 3", 500, 500);
-        window->setWindowFlag(SHOW_NORMAL);
+        window->show();
         //std::cout << "window 3 : " << sizeof(*(static_cast<Win32_window_polymorph*>(window))) << std::endl;
         //window->registerKeyboard();
         //window->registerMouse();
         //Connection c = window->connect_inputEvent(logInputs);
-        //window->exec();
+        window->exec();
         delete window;
     });
 
