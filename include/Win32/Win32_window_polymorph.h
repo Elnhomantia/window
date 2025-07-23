@@ -40,6 +40,7 @@ public:
     inline void clipCursor(bool clip) override { Win32_window::clipCursor(clip); }
 
     inline VkSurfaceKHR createVulkanSurface(VkInstance instance) const override { return Win32_window::createVulkanSurface(instance); }
+    inline std::array<const char*, 2> getRequiredVulkanExtensions() const { return Win32_window::getRequiredVulkanExtensions(); }
 };
 
 #endif //WIN32_WINDOW_POLYMORPH_H

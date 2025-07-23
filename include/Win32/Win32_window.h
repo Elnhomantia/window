@@ -6,6 +6,7 @@
 #include <sharedAbstration.h>
 #include <windows.h>
 #include <vulkan/vulkan.h>
+#include <array>
 
 /**
  * @brief Static implementation of a window for Windows.
@@ -118,6 +119,8 @@ public:
     * @copydoc Window::createVulkanSurface
     */
     VkSurfaceKHR createVulkanSurface(VkInstance instance) const;
+
+    constexpr std::array<const char*, 2> getRequiredVulkanExtensions() const;
 
 private:
     HWND hwnd = nullptr;

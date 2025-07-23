@@ -5,6 +5,7 @@
 #include <inputs.h>
 #include <sharedAbstration.h>
 #include <vulkan/vulkan.h>
+#include <span>
 
 /**
  * @brief Interface contract. Any implementation should verify this concept.
@@ -177,6 +178,8 @@ public:
      * @return A vulkan surface.
      */
     virtual VkSurfaceKHR createVulkanSurface(VkInstance instance) const = 0;
+
+    virtual std::array<const char*, 2> getRequiredVulkanExtensions() const = 0;
 };
 
 static_assert(WindowConcept<Window>, "Window interface does not satisfy WindowConcept.");

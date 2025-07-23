@@ -1,5 +1,6 @@
 #include <Win32/Win32_window.h>
 #include <iostream>
+#include <array>
 #include <hidsdi.h>
 #include <hidusage.h>
 #include <vulkan/vulkan_win32.h>
@@ -257,6 +258,13 @@ VkSurfaceKHR Win32_window::createVulkanSurface(VkInstance instance) const
     }
 
     return surface;
+}
+
+std::array<const char*, 2> Win32_window::getRequiredVulkanExtensions() const {
+    return {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+    };
 }
 
 LRESULT Win32_window::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
